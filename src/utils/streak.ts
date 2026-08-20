@@ -36,6 +36,6 @@ export const calculateCurrentStreak = (completedDates: string[]): number => {
 };
 
 // Calculate all-time longest streak
-export const calculateLongestStreak = (completedDates: string[], currentStreak: number, existingLongest: number): number => {
+export const calculateLongestStreak = (currentStreak: number, existingLongest: number): number => {
   return Math.max(existingLongest, currentStreak);
 };

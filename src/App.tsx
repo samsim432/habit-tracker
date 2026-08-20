@@ -34,10 +34,9 @@ export default function App() {
 
         const updatedCurrentStreak = calculateCurrentStreak(nextCompletedDates);
         const updatedLongestStreak = calculateLongestStreak(
-          nextCompletedDates,
-          updatedCurrentStreak,
-          habit.longestStreak
-        );
+  updatedCurrentStreak,
+  habit.longestStreak
+);
 
         return {
           ...habit,

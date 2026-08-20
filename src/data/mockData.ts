@@ -1,0 +1,52 @@
+import type { Habit } from '../types/habit';
+
+export const INITIAL_HABITS: Habit[] = [
+  {
+    id: 'habit-1',
+    title: 'Code for 1 Hour',
+    description: 'Work on personal projects or LeetCode',
+    icon: 'Code2',
+    color: 'indigo',
+    frequency: 'daily',
+    createdAt: '2026-08-01',
+    completedDates: ['2026-08-18', '2026-08-19', '2026-08-20'],
+    currentStreak: 3,
+    longestStreak: 5,
+  },
+  {
+    id: 'habit-2',
+    title: 'Read 20 Pages',
+    description: 'Non-fiction or programming literature',
+    icon: 'BookOpen',
+    color: 'amber',
+    frequency: 'daily',
+    createdAt: '2026-08-05',
+    completedDates: ['2026-08-19'],
+    currentStreak: 1,
+    longestStreak: 12,
+  },
+  {
+    id: 'habit-3',
+    title: 'Hydrate (2L Water)',
+    description: 'Drink 4 full bottles throughout the day',
+    icon: 'Droplets',
+    color: 'blue',
+    frequency: 'daily',
+    createdAt: '2026-08-10',
+    completedDates: ['2026-08-20'],
+    currentStreak: 4,
+    longestStreak: 4,
+  },
+  {
+    id: 'habit-4',
+    title: 'Morning Workout',
+    description: '30 minutes cardio or resistance training',
+    icon: 'Dumbbell',
+    color: 'rose',
+    frequency: 'weekdays',
+    createdAt: '2026-08-12',
+    completedDates: [],
+    currentStreak: 0,
+    longestStreak: 6,
+  }
+];

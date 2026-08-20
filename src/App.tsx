@@ -4,15 +4,17 @@ import type { Habit } from './types/habit';
 import { INITIAL_HABITS } from './data/mockData';
 import { HabitCard } from './components/HabitCard';
 import { ProgressCard } from './components/ProgressCard';
+import { AddHabitModal } from './components/AddHabitModal';
+import { useLocalStorage } from './hooks/useLocalStorage';
+import { formatDateKey, calculateCurrentStreak, calculateLongestStreak } from './utils/streak';
 
-const getTodayDateString = (): string => {
-  const today = new Date();
-  return today.toISOString().split('T')[0];
-};
+type FilterOption = 'all' | 'pending' | 'completed';
 
 export default function App() {
-  const [habits, setHabits] = useState<Habit[]>(INITIAL_HABITS);
-  const todayStr = getTodayDateString();
+  const [habits, setHabits] = useLocalStorage<Habit[]>('habitflow_habits', INITIAL_HABITS);
+  const [filter, setFilter] = useState<FilterOption>('all');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const todayStr = formatDateKey(new Date());
 
   const handleToggleHabit = (habitId: string) => {
     setHabits((prevHabits) =>
@@ -20,33 +22,60 @@ export default function App() {
         if (habit.id !== habitId) return habit;
 
         const isCompletedToday = habit.completedDates.includes(todayStr);
+        const nextCompletedDates = isCompletedToday
+          ? habit.completedDates.filter((d) => d !== todayStr)
+          : [...habit.completedDates, todayStr];
 
-        if (isCompletedToday) {
-          return {
-            ...habit,
-            completedDates: habit.completedDates.filter((d) => d !== todayStr),
-            currentStreak: Math.max(0, habit.currentStreak - 1),
-          };
-        } else {
-          const newStreak = habit.currentStreak + 1;
-          return {
-            ...habit,
-            completedDates: [...habit.completedDates, todayStr],
-            currentStreak: newStreak,
-            longestStreak: Math.max(habit.longestStreak, newStreak),
-          };
-        }
+        const updatedCurrentStreak = calculateCurrentStreak(nextCompletedDates);
+        const updatedLongestStreak = calculateLongestStreak(
+          nextCompletedDates,
+          updatedCurrentStreak,
+          habit.longestStreak
+        );
+
+        return {
+          ...habit,
+          completedDates: nextCompletedDates,
+          currentStreak: updatedCurrentStreak,
+          longestStreak: updatedLongestStreak,
+        };
       })
     );
+  };
+
+  const handleAddHabit = (
+    newHabitData: Omit<Habit, 'id' | 'createdAt' | 'completedDates' | 'currentStreak' | 'longestStreak'>
+  ) => {
+    const newHabit: Habit = {
+      ...newHabitData,
+      id: crypto.randomUUID(),
+      createdAt: todayStr,
+      completedDates: [],
+      currentStreak: 0,
+      longestStreak: 0,
+    };
+
+    setHabits((prev) => [newHabit, ...prev]);
+  };
+
+  const handleDeleteHabit = (habitId: string) => {
+    setHabits((prev) => prev.filter((h) => h.id !== habitId));
   };
 
   const completedTodayCount = habits.filter((h) =>
     h.completedDates.includes(todayStr)
   ).length;
 
+  const filteredHabits = habits.filter((habit) => {
+    const isCompleted = habit.completedDates.includes(todayStr);
+    if (filter === 'pending') return !isCompleted;
+    if (filter === 'completed') return isCompleted;
+    return true;
+  });
+
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 antialiased selection:bg-indigo-500 selection:text-white">
-      {/* Navigation */}
+    <div className="min-h-screen bg-slate-950 text-slate-100 antialiased selection:bg-indigo-500 selection:text-white pb-16">
+      {/* Top Navbar */}
       <header className="border-b border-slate-800/80 bg-slate-900/50 backdrop-blur-md sticky top-0 z-10">
         <div className="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
@@ -57,8 +86,8 @@ export default function App() {
           </div>
 
           <button
-            onClick={() => alert('Modal coming in the next step!')}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white text-xs font-semibold shadow-lg shadow-indigo-600/20 transition-all duration-200"
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white text-xs font-semibold shadow-lg shadow-indigo-600/20 transition-all duration-200 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>Add Habit</span>
@@ -68,35 +97,68 @@ export default function App() {
 
       {/* Main Container */}
       <main className="max-w-3xl mx-auto px-4 py-8 space-y-6">
-        <ProgressCard
-          total={habits.length}
-          completed={completedTodayCount}
-        />
+        {/* Progress Card */}
+        <ProgressCard total={habits.length} completed={completedTodayCount} />
 
-        <div className="flex items-center justify-between pt-2">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-400">
-            Today's Habits
-          </h2>
-          <span className="text-xs text-slate-500 font-medium">
-            {new Date().toLocaleDateString('en-US', {
-              weekday: 'short',
-              month: 'short',
-              day: 'numeric',
-            })}
-          </span>
+        {/* Section Header & Filter Tabs */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
+          <div>
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-400">
+              Today's Habits
+            </h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              {new Date().toLocaleDateString('en-US', {
+                weekday: 'long',
+                month: 'short',
+                day: 'numeric',
+              })}
+            </p>
+          </div>
+
+          {/* Filter Pills */}
+          <div className="flex items-center p-1 bg-slate-900 border border-slate-800 rounded-xl self-start sm:self-auto">
+            {(['all', 'pending', 'completed'] as FilterOption[]).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setFilter(tab)}
+                className={`px-3 py-1 rounded-lg text-xs font-medium capitalize transition-all ${
+                  filter === tab
+                    ? 'bg-slate-800 text-white shadow-sm border border-slate-700/50'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
         </div>
 
-        <div className="grid gap-3">
-          {habits.map((habit) => (
-            <HabitCard
-              key={habit.id}
-              habit={habit}
-              isCompletedToday={habit.completedDates.includes(todayStr)}
-              onToggle={handleToggleHabit}
-            />
-          ))}
-        </div>
+        {/* Habit List or Empty State */}
+        {filteredHabits.length > 0 ? (
+          <div className="grid gap-3">
+            {filteredHabits.map((habit) => (
+              <HabitCard
+                key={habit.id}
+                habit={habit}
+                isCompletedToday={habit.completedDates.includes(todayStr)}
+                onToggle={handleToggleHabit}
+                onDelete={handleDeleteHabit}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="p-12 text-center border border-dashed border-slate-800 rounded-2xl bg-slate-900/30">
+            <p className="text-sm text-slate-400">No habits found in this view.</p>
+          </div>
+        )}
       </main>
+
+      {/* Add Habit Modal */}
+      <AddHabitModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onAddHabit={handleAddHabit}
+      />
     </div>
   );
 }

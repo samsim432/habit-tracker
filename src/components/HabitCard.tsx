@@ -7,6 +7,7 @@ interface HabitCardProps {
   isCompletedToday: boolean;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
+  onClick: (habit: Habit) => void;
 }
 
 const colorStyles: Record<string, { bg: string; text: string; ring: string }> = {
@@ -18,12 +19,13 @@ const colorStyles: Record<string, { bg: string; text: string; ring: string }> = 
   rose: { bg: 'bg-rose-500/10', text: 'text-rose-400', ring: 'border-rose-500/20' },
 };
 
-export function HabitCard({ habit, isCompletedToday, onToggle, onDelete }: HabitCardProps) {
+export function HabitCard({ habit, isCompletedToday, onToggle, onDelete, onClick }: HabitCardProps) {
   const theme = colorStyles[habit.color] || colorStyles.indigo;
 
   return (
     <div
-      className={`group relative flex items-center justify-between p-4.5 rounded-2xl border transition-all duration-200 ${
+      onClick={() => onClick(habit)}
+      className={`group relative flex items-center justify-between p-4.5 rounded-2xl border transition-all duration-200 cursor-pointer ${
         isCompletedToday
           ? 'bg-slate-800/40 border-slate-800/60 opacity-80'
           : 'bg-slate-800/90 border-slate-700/80 hover:border-slate-600 hover:shadow-lg hover:shadow-slate-950/20'
@@ -57,7 +59,7 @@ export function HabitCard({ habit, isCompletedToday, onToggle, onDelete }: Habit
       </div>
 
       <div className="flex items-center gap-2 shrink-0">
-        {/* Delete Button (Visible on group hover or mobile) */}
+        {/* Delete Action */}
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -66,16 +68,19 @@ export function HabitCard({ habit, isCompletedToday, onToggle, onDelete }: Habit
             }
           }}
           title="Delete habit"
-          className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
+          className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100 cursor-pointer"
         >
           <Trash2 className="w-4 h-4" />
         </button>
 
-        {/* Completion Checkmark */}
+        {/* Complete Toggle Button */}
         <button
-          onClick={() => onToggle(habit.id)}
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggle(habit.id);
+          }}
           aria-label={isCompletedToday ? 'Mark incomplete' : 'Mark complete'}
-          className={`w-10 h-10 rounded-xl flex items-center justify-center border transition-all duration-200 ${
+          className={`w-10 h-10 rounded-xl flex items-center justify-center border transition-all duration-200 cursor-pointer ${
             isCompletedToday
               ? 'bg-emerald-500 border-emerald-400 text-slate-950 shadow-md shadow-emerald-500/20'
               : 'border-slate-600 hover:border-slate-400 hover:bg-slate-700/50 text-transparent'
